@@ -10,7 +10,7 @@ spec:
       - name: proxy
         env:
         - name: KONG_PLUGINS
-          value: request-uri-pass-auth,myheader
+          value: request-uri-pass-auth,myheader,forward-auth-request
         - name: KONG_LUA_PACKAGE_PATH
           value: "/opt/?.lua;;"
         volumeMounts:
@@ -25,3 +25,6 @@ spec:
       - name: kong-plugin-myheader
         configMap:
           name: kong-plugin-myheader
+      - name: kong-forward-auth-request
+        configMap:
+          name: kong-forward-auth-request
