@@ -1,38 +1,37 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: test
+  name: test-app-server
   annotations:
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: request-uri-pass-auth
 spec:
   rules:
   - http:
       paths:
       - path: /test/
         backend:
-          serviceName: test-server
+          serviceName: test-app-server
           servicePort: 8000
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: test-server
+    name: test-app-server
     labels:
-        name: test-server
+        name: test-app-server
 spec:
     replicas: 1
     selector:
         matchLabels:
-            name: test-server
+            name: test-app-server
     template:
         metadata:
             labels:
-                name: test-server
+                name: test-app-server
         spec:
             containers:
-                - name: test-server
-                  image: kong-test-myimage
+                - name: test-app-server
+                  image: kong-test-app
                   imagePullPolicy: IfNotPresent
                   ports:
                     - containerPort: 8080
@@ -40,7 +39,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-    name: test-server
+    name: test-app-server
 spec:
     ports:
         - name: http
@@ -48,5 +47,5 @@ spec:
           protocol: TCP
           targetPort: 8080
     selector:
-        name: test-server
+        name: test-app-server
 ---
