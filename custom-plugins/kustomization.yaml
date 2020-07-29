@@ -1,0 +1,6 @@
+bases:
+- ../base
+
+resources:
+patchesStrategicMerge:
+- custom-plugin.yaml

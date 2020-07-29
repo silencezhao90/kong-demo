@@ -1,0 +1,8 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: forward-auth-request
+config:
+  prefixs:
+  - "/open/"
+plugin: forward-auth-request
