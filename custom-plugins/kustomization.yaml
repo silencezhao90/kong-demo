@@ -1,5 +1,5 @@
 bases:
-- ../base
+- ../manifests/base
 
 resources:
 patchesStrategicMerge:
