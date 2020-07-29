@@ -18,13 +18,15 @@ spec:
           mountPath: /opt/kong/plugins/request-uri-pass-auth
         - name: kong-plugin-myheader
           mountPath: /opt/kong/plugins/myheader
+        - name: kong-forward-auth-request
+          mountPath: /opt/kong/plugins/forward-auth-request
       volumes:
-      - name: kong-plugin-request-uri-pass-auth
+      - name: plugin-request-uri-pass-auth
         configMap:
-          name: kong-plugin-request-uri-pass-auth
-      - name: kong-plugin-myheader
+          name: plugin-request-uri-pass-auth
+      - name: my-custom-plugin
         configMap:
-          name: kong-plugin-myheader
-      - name: kong-forward-auth-request
+          name: my-custom-plugin
+      - name: forward-auth-request
         configMap:
-          name: kong-forward-auth-request
+          name: forward-auth-request
