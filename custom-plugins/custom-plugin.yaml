@@ -14,11 +14,11 @@ spec:
         - name: KONG_LUA_PACKAGE_PATH
           value: "/opt/?.lua;;"
         volumeMounts:
-        - name: kong-plugin-request-uri-pass-auth
+        - name: plugin-request-uri-pass-auth
           mountPath: /opt/kong/plugins/request-uri-pass-auth
-        - name: kong-plugin-myheader
+        - name: my-custom-plugin
           mountPath: /opt/kong/plugins/myheader
-        - name: kong-forward-auth-request
+        - name: forward-auth-request
           mountPath: /opt/kong/plugins/forward-auth-request
       volumes:
       - name: plugin-request-uri-pass-auth
