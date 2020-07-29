@@ -10,9 +10,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	passwd := r.URL.Query().Get("passwd")
 	content := fmt.Sprintf("username:%v, passwd:%v", username, passwd)
 	if username == "test" && passwd == "123456" {
-		w.WriteHeader(403)
-	} else {
 		w.WriteHeader(200)
+	} else {
+		w.WriteHeader(403)
 	}
 	fmt.Fprintf(w, content)
 	fmt.Println(content)
