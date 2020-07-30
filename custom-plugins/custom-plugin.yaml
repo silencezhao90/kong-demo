@@ -23,10 +23,10 @@ spec:
       volumes:
       - name: plugin-request-uri-pass-auth
         configMap:
-          name: plugin-request-uri-pass-auth
+          name: kong-plugin-request-uri-pass-auth
       - name: my-custom-plugin
         configMap:
-          name: my-custom-plugin
+          name: kong-plugin-myheader
       - name: forward-auth-request
         configMap:
-          name: forward-auth-request
+          name: kong-forward-auth-request
