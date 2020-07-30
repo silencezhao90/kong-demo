@@ -24,13 +24,15 @@ function ForwardAuthRequestHandler:access(conf)
     uri_path = kong.request.get_path()
     local is_whitelist = conf.whitelist
     local passed = false
+    -- TODO: 判断白名单路由，这个白名单下的路由不需要做鉴权
+    token = kong.request.get_query_arg("token")
 
     -- 转发auth server做鉴权校验
     local client = assert(http.new())
     assert(client:connect("test-auth", 8001))
     local res = assert(client:request {
         method = "GET",
-        path = "/"
+        path = "/?token="..token
     })
 
     if res.status == 200 then
