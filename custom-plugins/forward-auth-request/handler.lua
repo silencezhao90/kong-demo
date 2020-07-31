@@ -26,6 +26,8 @@ function ForwardAuthRequestHandler:access(conf)
     local passed = false
     -- TODO: 判断白名单路由，这个白名单下的路由不需要做鉴权
     token = kong.request.get_query_arg("token")
+    headers = kong.request.get_headers()
+    kong.response.set_header("forward-auth-request set headers", headers)
 
     -- 转发auth server做鉴权校验
     local client = assert(http.new())
