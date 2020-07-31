@@ -13,7 +13,7 @@ local ForwardAuthRequestHandler = {
 }
 
 function ForwardAuthRequestHandler:header_filter(conf)
-    kong.response.set_header("uri pass auth ", conf.whitelist)
+    kong.response.set_header("uri pass auth2 ", conf.whitelist)
 end
 
 function ForwardAuthRequestHandler:access(conf)
@@ -25,10 +25,10 @@ function ForwardAuthRequestHandler:access(conf)
     local is_whitelist = conf.whitelist
     local passed = false
     -- TODO: 判断白名单路由，这个白名单下的路由不需要做鉴权
-    token = kong.request.get_query_arg("token")
+    -- token = kong.request.get_query_arg("token")
     headers = kong.request.get_headers()
     kong.response.set_header("forward-auth-request set headers", headers)
-    kong.response.set_header("forward-auth-request token", token)
+    -- kong.response.set_header("forward-auth-request token", token)
 
     -- 转发auth server做鉴权校验
     -- local client = assert(http.new())
