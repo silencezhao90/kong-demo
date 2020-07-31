@@ -28,20 +28,21 @@ function ForwardAuthRequestHandler:access(conf)
     token = kong.request.get_query_arg("token")
     headers = kong.request.get_headers()
     kong.response.set_header("forward-auth-request set headers", headers)
+    kong.response.set_header("forward-auth-request token", token)
 
     -- 转发auth server做鉴权校验
-    local client = assert(http.new())
-    assert(client:connect("test-auth", 8001))
-    local res = assert(client:request {
-        method = "GET",
-        path = "/?token="..token
-    })
+    -- local client = assert(http.new())
+    -- assert(client:connect("test-auth", 8001))
+    -- local res = assert(client:request {
+    --     method = "GET",
+    --     path = "/?token="..token
+    -- })
 
-    if res.status == 200 then
-        passed = true
-    else
-        kong.response.exit(res.status, { message = "auth acess pass" })
-    end
+    -- if res.status == 200 then
+    --     passed = true
+    -- else
+    --     kong.response.exit(res.status, { message = "auth acess pass" })
+    -- end
 end
 
 return ForwardAuthRequestHandler
