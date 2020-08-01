@@ -15,8 +15,8 @@ spec:
           servicePort: 8000
       - path: /open/
         backend:
-        serviceName: test-app-server
-        servicePort: 8000
+          serviceName: test-app-server
+          servicePort: 8000
 ---
 apiVersion: apps/v1
 kind: Deployment
