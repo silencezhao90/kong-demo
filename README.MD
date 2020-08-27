@@ -39,39 +39,6 @@ deactivate "KONG GATEWAY"
 @enduml
 ```
 
-## 转发逻辑
-```plantuml
-@startuml
-
-start
-:Client Api request;
-while (url是否属于白名单url) is (false)
-  :鉴权认证服务;
-  while (是否通过认证) is (no)
-    :通过认证;
-  endwhile (通过认证)
-if (url是否属于白名单url) then (false)
-  :鉴权认证服务;
-  if (是否通过认证) then (no)
-    :Client Api request;
-  endif
-else (true)
-endif
-
-if (do redirect?) then (yes)
-  :redirect process;
-else
-  if (do forward?) then (yes)
-    :Forward request;
-  else (no)
-    :Render page template;
-  endif
-endif
-
-stop
-
-@enduml
-```
 ## 安装部署流程
 本次步骤在kubernetes环境下部署，确保kubectl在v1.14版本以上
 #### 部署kong
@@ -119,7 +86,7 @@ X-Kong-Upstream-Latency: 1
 X-Kong-Proxy-Latency: 0
 Via: kong/2.0.5
 
-username:, passwd:
+token:
 [root@localhost kong-demo]#
 ```
 #### 使用官方插件
@@ -148,6 +115,22 @@ test-auth         *                               80      5m38s     13d
 然后将其与Ingress规则相关联
 ```bash
 $ kubectl patch ingress test-app-server -p '{"metadata":{"annotations":{"konghq.com/plugins":"add-response-header"}}}'
+```
+设置全局插件
+```
+$ echo "
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: global-rate-limit
+  labels:
+    global: \"true\"
+config:
+  minute: 5
+  limit_by: consumer
+  policy: local
+plugin: rate-limiting
+" | kubectl apply -f -
 ```
 #### 安装自定义插件
 **为插件代码创建ConfigMap或者Secret**
@@ -261,6 +244,7 @@ Server: kong/2.0.5
 {"message":"not access permission"}[root@localhost kong-demo]#
 ```
 可以看到401状态码和返回结果{"message":"not access permission"}。这是转发插件+鉴权服务返回的结果。另外"uri pass auth : true"、"myheader: my first plugin"这两个头信息也是另外两个自定义插件设置的。说明所有自定义插件已经生效
-> 注意！这里有一个坑。就是当使用自定义配置插件时，如果之前已经使用了官方插件，并且设置了全局生效。会造成kong-ingress-controller找不到ingress暴露出来的服务。
 
-> 另外，使用了自定义插件，官方插件需要配置到kong Deployment资源清单KONG_PLUGINS里才能使用。
+> 注意！这里有一个坑。如果使用了自定义插件，官方插件需要配置到kong Deployment资源清单KONG_PLUGINS里才能使用，而且这个时候设置全局生效是没用的。
+> 
+> KongPlugin资源需要跟对应的svc或ingress处于同一个命名空间

@@ -31,7 +31,7 @@ function ForwardAuthRequestHandler:access(conf)
   }
 
   local client = http.new()
-  assert(client:connect("auth-service.realibox.svc.cluster.local", 8080))
+  assert(client:connect("test-auth.default.svc.cluster.local", 8080))
   local res, err = client:request {
       method = "POST",
       path = "/api/v1/auth",
