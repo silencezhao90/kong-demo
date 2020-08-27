@@ -21,22 +21,35 @@ function ForwardAuthRequestHandler:access(conf)
     return
   end
   -- TODO: 判断白名单路由，这个白名单下的路由不需要做鉴权
-  -- token = kong.request.get_header("Token")
 
   token = kong.request.get_header("Token")
+  uri_path = kong.request.get_path()
   -- 转发auth server做鉴权校验
-  local client = http.new()
-    assert(client:connect("10.106.50.80", 8001))
-    local res = client:request {
-        method = "GET",
-        path = "/?token="..token
-    }
+  local body = {
+    token = token,
+    path = uri_path
+  }
 
+  local client = http.new()
+  assert(client:connect("auth-service.realibox.svc.cluster.local", 8080))
+  local res, err = client:request {
+      method = "POST",
+      path = "/api/v1/auth",
+      body = body,
+  }
+  if not res then
+    kong.response.exit(res.status, { message = "failed to request: "..err})
+  else
     if res.status == 200 then
-        passed = true
+      -- TODO: 设置请求头用户信息
+      local set_header = kong.service.request.set_header
+      set_header("Authorization", res:read_body())
+      client:close()
+      passed = true
     else
-        kong.response.exit(res.status, { message = "auth acess pass"..token })
+      kong.response.exit(res.status, { message = "auth not pass"})
     end
+  end
 end
 
 return ForwardAuthRequestHandler
