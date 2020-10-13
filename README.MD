@@ -10,36 +10,6 @@ Kong Gateway是为微服务优化的开源，轻量级API网关
 * 该服务仅接收有效请求，因此不会浪费周期来处理无效请求。
 * 记录所有请求以集中查看流量。
 
-```plantuml
-@startuml
-"API CLIENT" -> "KONG GATEWAY": REQUESTS
-activate "KONG GATEWAY"
-"KONG GATEWAY" -> "BACKEND API": REQUESTS
-"BACKEND API" -> "KONG GATEWAY": RESPONSES
-"KONG GATEWAY" -> "API CLIENT": RESPONSES
-deactivate "KONG GATEWAY"
-@enduml
-```
-
-### kong路由转发规则
-
-## 转发时序图
-```
-plantuml
-@startuml
-"API CLIENT" -> "KONG GATEWAY": REQUESTS
-activate "KONG GATEWAY"
-"KONG GATEWAY" -> "KONG GATEWAY": "forward-plugin"
-"KONG GATEWAY" -> "AUTH BACKEND SERVER": REQUEST
-"AUTH BACKEND SERVER" -> "KONG GATEWAY": RESPONSES
-"KONG GATEWAY" -> "KONG GATEWAY": "forward-plugin"
-"KONG GATEWAY" -> "BACKEND API": REQUESTS
-"BACKEND API" -> "KONG GATEWAY": RESPONSES
-"KONG GATEWAY" -> "API CLIENT": RESPONSES
-deactivate "KONG GATEWAY"
-@enduml
-```
-
 ## 安装部署流程
 本次步骤在kubernetes环境下部署，确保kubectl在v1.14版本以上
 #### 部署kong
