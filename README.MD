@@ -24,7 +24,8 @@ deactivate "KONG GATEWAY"
 ### kong路由转发规则
 
 ## 转发时序图
-```plantuml
+```
+plantuml
 @startuml
 "API CLIENT" -> "KONG GATEWAY": REQUESTS
 activate "KONG GATEWAY"
@@ -43,6 +44,40 @@ deactivate "KONG GATEWAY"
 本次步骤在kubernetes环境下部署，确保kubectl在v1.14版本以上
 #### 部署kong
 kubectl apply -k manifests/base
+
+查看po状态
+```bash
+[root@realibox kong-k8s]# kubectl get po -n kong
+NAME                            READY   STATUS    RESTARTS   AGE
+ingress-kong-7f8f64c5fc-xrsbg   2/2     Running   1          17m
+```
+
+查看svc
+```bash
+[root@realibox kong-k8s]# kubectl get svc -n kong
+NAME                      TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                                     AGE
+kong-proxy                LoadBalancer   10.96.178.210    <pending>     80:32724/TCP,443:31298/TCP,8100:32415/TCP   25m
+kong-validation-webhook   ClusterIP      10.104.253.149   <none>        443/TCP                                     25m
+```
+
+运行以下命令
+```bash
+[root@realibox kong-k8s]# export PROXY_IP=$(kubectl get -o jsonpath="{.spec.clusterIP}" service kong-proxy -n kong)
+```
+
+这个时候访问kong服务，会返回404
+```bash
+[root@realibox kong-k8s]# curl -i $PROXY_IP
+HTTP/1.1 404 Not Found
+Date: Fri, 09 Oct 2020 10:03:53 GMT
+Content-Type: application/json; charset=utf-8
+Connection: keep-alive
+Content-Length: 48
+X-Kong-Response-Latency: 0
+Server: kong/2.0.5
+
+{"message":"no Route matched with those values"}
+```
 #### 运行两个测试服务
 
 **构建服务镜像**
@@ -62,32 +97,30 @@ $kubectl apply -f test-apps/auth/auth.yaml
 **访问服务**
 可以看到结果如下
 ```bash
-[root@localhost kong-demo]# curl -i http://10.97.239.187/test/
+[root@realibox kong-k8s]# curl -i $PROXY_IP/test/
 HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
 Content-Length: 6
 Connection: keep-alive
-Date: Wed, 29 Jul 2020 11:37:51 GMT
+Date: Fri, 09 Oct 2020 10:05:24 GMT
 X-Kong-Upstream-Latency: 0
-X-Kong-Proxy-Latency: 0
+X-Kong-Proxy-Latency: 1
 Via: kong/2.0.5
 
 /test/
-[root@localhost kong-demo]#
 ```
 ```bash
-[root@localhost kong-demo]# curl -i http://10.97.239.187/auth/
+[root@realibox kong-k8s]# curl -i $PROXY_IP/auth/
 HTTP/1.1 403 Forbidden
 Content-Type: text/plain; charset=utf-8
-Content-Length: 18
+Content-Length: 6
 Connection: keep-alive
-Date: Wed, 29 Jul 2020 11:42:52 GMT
-X-Kong-Upstream-Latency: 1
-X-Kong-Proxy-Latency: 0
+Date: Fri, 09 Oct 2020 10:05:54 GMT
+X-Kong-Upstream-Latency: 0
+X-Kong-Proxy-Latency: 1
 Via: kong/2.0.5
 
 token:
-[root@localhost kong-demo]#
 ```
 #### 使用官方插件
 在Ingress资源上配置官方插件
@@ -116,8 +149,26 @@ test-auth         *                               80      5m38s     13d
 ```bash
 $ kubectl patch ingress test-app-server -p '{"metadata":{"annotations":{"konghq.com/plugins":"add-response-header"}}}'
 ```
-设置全局插件
+
+访问服务，可以看到响应头多了刚刚插件的信息
 ```
+[root@realibox kong-k8s]# kubectl edit ingress test-app-server
+Edit cancelled, no changes made.
+[root@realibox kong-k8s]# curl -i $PROXY_IP/test/
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Content-Length: 6
+Connection: keep-alive
+Date: Fri, 09 Oct 2020 10:09:08 GMT
+demo:  injected-by-kong
+X-Kong-Upstream-Latency: 1
+X-Kong-Proxy-Latency: 0
+Via: kong/2.0.5
+
+/test/
+```
+设置全局插件
+```bash
 $ echo "
 apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
@@ -132,26 +183,43 @@ config:
 plugin: rate-limiting
 " | kubectl apply -f -
 ```
+
+再次访问服务，响应头多了全局插件信息（全局插件不需要在指定ingress或service配置注解）
+```bash
+[root@realibox kong-k8s]# curl -i $PROXY_IP/test/
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Content-Length: 6
+Connection: keep-alive
+Date: Fri, 09 Oct 2020 10:10:33 GMT
+X-RateLimit-Remaining-Minute: 4
+X-RateLimit-Limit-Minute: 5
+RateLimit-Remaining: 4
+RateLimit-Limit: 5
+RateLimit-Reset: 27
+demo:  injected-by-kong
+X-Kong-Upstream-Latency: 0
+X-Kong-Proxy-Latency: 1
+Via: kong/2.0.5
+
+/test/
+```
 #### 安装自定义插件
 **为插件代码创建ConfigMap或者Secret**
-下面创建了3个自定义插件
+下面创建2个自定义插件
 ```bash
 kubectl create configmap kong-plugin-myheader --from-file=custom-plugins/myheader -n kong
 ```
 ```bash
 kubectl create configmap kong-plugin-request-uri-pass-auth --from-file=custom-plugins/request-uri-pass-auth -n kong
 ```
-```bash
-kubectl create configmap kong-forward-auth-request --from-file=custom-plugins/forward-auth-request -n kong
-```
 **查看创建的configmap**
 ```bash
-[root@localhost kong-demo]# kubectl get configmap -n kong
+[root@realibox kong-k8s]# kubectl get configmap -n kong
 NAME                                DATA   AGE
-ingress-controller-leader-kong      0      76m
-kong-forward-auth-request           2      31s
-kong-plugin-myheader                2      49s
-kong-plugin-request-uri-pass-auth   2      36s
+ingress-controller-leader-kong      0      38m
+kong-plugin-myheader                3      22s
+kong-plugin-request-uri-pass-auth   3      9s
 ```
 #### 更新kong Deployment资源
 要使用自定义插件，新增custom-plugin.yaml文件，用于更新kong Deployment
@@ -168,7 +236,7 @@ spec:
       - name: proxy
         env:
         - name: KONG_PLUGINS
-          value: request-uri-pass-auth,myheader,forward-auth-request
+          value: request-uri-pass-auth,myheader
         - name: KONG_LUA_PACKAGE_PATH
           value: "/opt/?.lua;;"
         volumeMounts:
@@ -176,8 +244,6 @@ spec:
           mountPath: /opt/kong/plugins/request-uri-pass-auth
         - name: my-custom-plugin
           mountPath: /opt/kong/plugins/myheader
-        - name: forward-auth-request
-          mountPath: /opt/kong/plugins/forward-auth-request
       volumes:
       - name: plugin-request-uri-pass-auth
         configMap:
@@ -185,28 +251,21 @@ spec:
       - name: my-custom-plugin
         configMap:
           name: kong-plugin-myheader
-      - name: forward-auth-request
-        configMap:
-          name: kong-forward-auth-request
 
 ```
 **更新kong Deployment资源**
 ```bash
-kubectl apply -k custom-plugins/
+kubectl apply -k demo/custom-plugins/
 ```
 #### 创建KongPlugin自定义资源
-分别对刚刚3个插件创建KongPlugin
+分别对刚刚2个插件创建KongPlugin
 ```bash
-[root@localhost kong-demo]# kubectl apply -f custom-plugins/myheader.yaml
+[root@localhost kong-demo]# kubectl apply -f demo/custom-plugins/myheader/myheader.yaml
 kongplugin.configuration.konghq.com/my-custom-plugin created
 ```
 ```bash
-[root@localhost kong-demo]# kubectl apply -f custom-plugins/request-uri-pass-auth.yaml
+[root@localhost kong-demo]# kubectl apply -f demo/custom-plugins/request-uri-pass-auth/request-uri-pass-auth.yaml
 kongplugin.configuration.konghq.com/request-uri-pass-auth created
-```
-```bash
-[root@localhost kong-demo]# kubectl apply -f custom-plugins/forward-auth-request.yaml
-kongplugin.configuration.konghq.com/forward-auth-request created
 ```
 **查看KongPlugin**
 可以看到官方的KongPlugin和自定义KongPlugin
@@ -214,23 +273,14 @@ kongplugin.configuration.konghq.com/forward-auth-request created
 [root@localhost kong-demo]# kubectl get KongPlugin -A
 NAMESPACE   NAME                    PLUGIN-TYPE             AGE
 default     add-response-header     response-transformer    25m
-default     forward-auth-request    forward-auth-request    31s
 default     global-rate-limit       rate-limiting           18m
 default     my-custom-plugin        myheader                98s
 default     request-uri-pass-auth   request-uri-pass-auth   57s
 ```
 ## 测试
-#### 查看kong代理服务IP
-```bash
-[root@localhost kong-demo]# kubectl get svc -n kong
-NAME                      TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-kong-proxy                LoadBalancer   10.106.111.87   <pending>     80:31777/TCP,443:30001/TCP   118m
-kong-validation-webhook   ClusterIP      10.107.79.218   <none>        443/TCP                      118m
-```
-可以看到10.106.111.87是kong-proxy服务的ip，我们可以通过这个ip地址访问在ingress资源里暴露的服务
 #### 测试自定义插件是否生效
 ```bash
-[root@localhost kong-demo]# curl -i 10.106.111.87/test/
+[root@localhost kong-demo]# curl -i $PROXY_IP/test/
 HTTP/1.1 401 Unauthorized
 Date: Thu, 30 Jul 2020 10:01:56 GMT
 Content-Type: application/json; charset=utf-8

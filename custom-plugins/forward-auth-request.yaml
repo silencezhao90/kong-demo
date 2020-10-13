@@ -1,9 +1,0 @@
-apiVersion: configuration.konghq.com/v1
-kind: KongPlugin
-metadata:
-  name: forward-auth-request
-  namespace: realibox
-config:
-  prefixs:
-  - "/open/"
-plugin: forward-auth-request

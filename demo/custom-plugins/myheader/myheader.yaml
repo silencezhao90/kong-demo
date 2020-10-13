@@ -2,7 +2,6 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: my-custom-plugin
-  namespace: realibox
 config:
   header_value: "my first plugin"
 plugin: myheader

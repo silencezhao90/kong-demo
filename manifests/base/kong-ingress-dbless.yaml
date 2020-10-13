@@ -22,9 +22,18 @@ spec:
         app: ingress-kong
     spec:
       serviceAccountName: kong-serviceaccount
+      nodeSelector:
+        kong: "true"
       containers:
       - name: proxy
         image: kong:2.0
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: 500Mi
+          limits: 
+            cpu: "1"
+            memory: 1Gi
         securityContext:
           runAsUser: 1000
         env:

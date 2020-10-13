@@ -4,7 +4,7 @@ metadata:
   name: test-app-server
   annotations:
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: request-uri-pass-auth,my-custom-plugin,forward-auth-request
+    konghq.com/plugins: my-custom-plugin,forward-auth-request
 spec:
   rules:
   - http:
