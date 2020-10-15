@@ -35,7 +35,7 @@ kong-validation-webhook   ClusterIP      10.104.253.149   <none>        443/TCP 
 [root@realibox kong-k8s]# export PROXY_IP=$(kubectl get -o jsonpath="{.spec.clusterIP}" service kong-proxy -n kong)
 ```
 
-这个时候访问kong服务，会返回404
+这个时候访问kong服务，响应头包含kong信息。
 ```bash
 [root@realibox kong-k8s]# curl -i $PROXY_IP
 HTTP/1.1 404 Not Found
@@ -65,7 +65,7 @@ $kubectl apply -f test-apps/test-app.yaml
 $kubectl apply -f test-apps/auth/auth.yaml
 ```
 **访问服务**
-可以看到结果如下
+可以看到结果如下，流量经过kong访问到了test和auth
 ```bash
 [root@realibox kong-k8s]# curl -i $PROXY_IP/test/
 HTTP/1.1 200 OK
@@ -175,15 +175,15 @@ Via: kong/2.0.5
 /test/
 ```
 #### 安装自定义插件
-**为插件代码创建ConfigMap或者Secret**
-下面创建2个自定义插件
+##### 为插件代码创建ConfigMap或者Secret
+以本demo为例，下面创建2个自定义插件
 ```bash
-kubectl create configmap kong-plugin-myheader --from-file=custom-plugins/myheader -n kong
+kubectl create configmap kong-plugin-myheader --from-file=demo/custom-plugins/myheader -n kong
 ```
 ```bash
-kubectl create configmap kong-plugin-request-uri-pass-auth --from-file=custom-plugins/request-uri-pass-auth -n kong
+kubectl create configmap kong-plugin-request-uri-pass-auth --from-file=demo/custom-plugins/request-uri-pass-auth -n kong
 ```
-**查看创建的configmap**
+##### 查看创建的configmap
 ```bash
 [root@realibox kong-k8s]# kubectl get configmap -n kong
 NAME                                DATA   AGE
@@ -192,7 +192,7 @@ kong-plugin-myheader                3      22s
 kong-plugin-request-uri-pass-auth   3      9s
 ```
 #### 更新kong Deployment资源
-要使用自定义插件，新增custom-plugin.yaml文件，用于更新kong Deployment
+要使用自定义插件，新增custom-plugin.yaml文件，新增插件相关环境变量。
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -223,12 +223,36 @@ spec:
           name: kong-plugin-myheader
 
 ```
-**更新kong Deployment资源**
+##### 更新kong Deployment资源
 ```bash
 kubectl apply -k demo/custom-plugins/
 ```
 #### 创建KongPlugin自定义资源
 分别对刚刚2个插件创建KongPlugin
+
+myheader.yaml
+```yaml
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: my-custom-plugin
+config:
+  header_value: "my first plugin"
+plugin: myheader
+```
+
+request-uri-pass-auth.yaml
+```yaml
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: request-uri-pass-auth
+config:
+  prefixs:
+  - "/open/"
+plugin: request-uri-pass-auth
+```
+
 ```bash
 [root@localhost kong-demo]# kubectl apply -f demo/custom-plugins/myheader/myheader.yaml
 kongplugin.configuration.konghq.com/my-custom-plugin created
@@ -249,6 +273,10 @@ default     request-uri-pass-auth   request-uri-pass-auth   57s
 ```
 ## 测试
 #### 测试自定义插件是否生效
+为test服务添加request-uri-pass-auth插件
+![](https://realicloud-local.oss-cn-shenzhen.aliyuncs.com/common/zb/chajian1.png)
+为auth服务添加my-custom-plugin插件
+![](https://realicloud-local.oss-cn-shenzhen.aliyuncs.com/common/zb/chajian2.png)
 ```bash
 [root@localhost kong-demo]# curl -i $PROXY_IP/test/
 HTTP/1.1 401 Unauthorized
@@ -268,3 +296,5 @@ Server: kong/2.0.5
 > 注意！这里有一个坑。如果使用了自定义插件，官方插件需要配置到kong Deployment资源清单KONG_PLUGINS里才能使用，而且这个时候设置全局生效是没用的。
 > 
 > KongPlugin资源需要跟对应的svc或ingress处于同一个命名空间
+
+## 阿里云上使用kong

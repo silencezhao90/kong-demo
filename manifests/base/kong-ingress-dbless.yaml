@@ -22,8 +22,8 @@ spec:
         app: ingress-kong
     spec:
       serviceAccountName: kong-serviceaccount
-      nodeSelector:
-        kong: "true"
+      # nodeSelector:
+      #   kong: "true"
       containers:
       - name: proxy
         image: kong:2.0

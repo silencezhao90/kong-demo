@@ -4,6 +4,7 @@ metadata:
   name: test-auth
   annotations:
     kubernetes.io/ingress.class: "kong"
+    konghq.com/plugins: my-custom-plugin
 spec:
   rules:
   - http:
