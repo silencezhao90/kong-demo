@@ -4,7 +4,7 @@ metadata:
   name: kong-auth-server
   annotations:
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: my-custom-plugin
+    # konghq.com/plugins: my-custom-plugin
 spec:
   rules:
   - http:
@@ -32,7 +32,7 @@ spec:
         spec:
             containers:
                 - name: kong-auth-server
-                  image: kong-kong-auth-server
+                  image: kong-auth-server
                   imagePullPolicy: IfNotPresent
                   ports:
                     - containerPort: 8088
