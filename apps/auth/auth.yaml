@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: test-auth
+  name: kong-auth-server
   annotations:
     kubernetes.io/ingress.class: "kong"
     konghq.com/plugins: my-custom-plugin
@@ -11,28 +11,28 @@ spec:
       paths:
       - path: /auth/
         backend:
-          serviceName: test-auth
+          serviceName: kong-auth-server
           servicePort: 8001
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: test-auth
+    name: kong-auth-server
     labels:
-        name: test-auth
+        name: kong-auth-server
 spec:
     replicas: 1
     selector:
         matchLabels:
-            name: test-auth
+            name: kong-auth-server
     template:
         metadata:
             labels:
-                name: test-auth
+                name: kong-auth-server
         spec:
             containers:
-                - name: test-auth
-                  image: kong-test-auth
+                - name: kong-auth-server
+                  image: kong-kong-auth-server
                   imagePullPolicy: IfNotPresent
                   ports:
                     - containerPort: 8088
@@ -40,7 +40,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-    name: test-auth
+    name: kong-auth-server
 spec:
     ports:
         - name: http
@@ -48,5 +48,5 @@ spec:
           protocol: TCP
           targetPort: 8088
     selector:
-        name: test-auth
+        name: kong-auth-server
 ---
