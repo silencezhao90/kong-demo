@@ -13,7 +13,9 @@ Kong Gateway是为微服务优化的开源，轻量级API网关
 ## 安装部署流程
 本次步骤在kubernetes环境下部署，确保kubectl在v1.14版本以上
 #### 部署kong
+```bash
 kubectl apply -k manifests/base
+```
 
 查看po状态
 ```bash

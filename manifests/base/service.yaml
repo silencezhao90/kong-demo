@@ -27,8 +27,5 @@ spec:
     port: 443
     targetPort: 8443
     protocol: TCP
-  - name: metrics
-    port: 8100
-    targetPort: 8100
   selector:
     app: ingress-kong
